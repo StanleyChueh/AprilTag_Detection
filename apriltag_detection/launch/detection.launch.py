@@ -11,8 +11,7 @@ def generate_launch_description():
         ),
         Node(
             package='apriltag_detection',
-            executable='camera',
-            name='camera'
+            executable='tf_publisher',
+            name='tf_publisher'
         )
     ])
-
