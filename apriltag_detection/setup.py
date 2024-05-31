@@ -25,8 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'apriltag_detection = apriltag_detection.apriltag_detection:main',
-            'camera = apriltag_detection.camera:main',
+            'tf_publisher = apriltag_detection.tf_publisher:main',
         ],
     },
 )
-
