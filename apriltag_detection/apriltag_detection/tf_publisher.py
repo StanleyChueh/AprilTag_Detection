@@ -1,24 +1,18 @@
-import cv2
-import numpy as np
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped
 from cv_bridge import CvBridge
 from apriltag import apriltag
+import cv2
+import numpy as np
+import tf2_ros
+import tf2_geometry_msgs
 
-class WebcamAndAprilTagNode(Node):
+class AprilTagDetector(Node):
     def __init__(self):
-        super().__init__('webcam_and_april_tag_node')
+        super().__init__('april_tag_detector')
         self.bridge = CvBridge()
-
-        # Initialize webcam
-        self.cap = cv2.VideoCapture(0)  # 0 is the ID of the default webcam
-
-        # Check if the webcam is opened correctly
-        if not self.cap.isOpened():
-            self.get_logger().error("Error: Could not open webcam.")
-            exit()
 
         # Initialize AprilTag detector
         self.detector = apriltag("tag36h11")
@@ -34,57 +28,13 @@ class WebcamAndAprilTagNode(Node):
         self.cx = self.image_width_px // 2
         self.cy = self.image_height_px // 2
 
-        # ROS publishers
-        self.image_publisher = self.create_publisher(Image, 'camera_image', 10)
-        self.pose_publisher = self.create_publisher(PoseStamped, 'april_tag_pose', 10)
-
-        # ROS subscriber
-        self.create_subscription(Image, 'camera_image', self.image_callback, 10)
-
-        # Start publishing images
-        self.timer = self.create_timer(0.1, self.publish_image)
-
-    def publish_image(self):
-        ret, frame = self.cap.read()
-
-        if ret:
-            # Resize the frame to 160x120 pixels
-            frame_resized = cv2.resize(frame, (160, 120))
-
-            # Display the resized frame
-            cv_image = frame_resized.copy()
-            gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-
-            # Detect AprilTags in the frame
-            detections = self.detector.detect(gray)
-
-            for detection in detections:
-                corners = detection['lb-rb-rt-lt']
-                for i in range(4):
-                    start_point = tuple(map(int, corners[i]))
-                    end_point = tuple(map(int, corners[(i + 1) % 4]))
-                    cv2.line(cv_image, start_point, end_point, (0, 255, 0), 2)
-                
-                # Draw the ID of the AprilTag
-                tag_id = str(detection['id'])
-                center_x = int((corners[0][0] + corners[2][0]) / 2)
-                center_y = int((corners[0][1] + corners[2][1]) / 2)
-                cv2.putText(cv_image, tag_id, (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
-            cv2.imshow('Webcam', cv_image)
-            cv2.waitKey(1)
-
-            # Convert the resized frame to a ROS image message
-            ros_image = self.bridge.cv2_to_imgmsg(frame_resized, encoding='bgr8')
-
-            # Set the timestamp and frame ID
-            ros_image.header.stamp = self.get_clock().now().to_msg()
-            ros_image.header.frame_id = 'camera_frame'
-
-            # Publish the image
-            self.image_publisher.publish(ros_image)
-        else:
-            self.get_logger().error("Error: Could not read frame from webcam.")
+        # ROS subscribers and publisher
+        self.subscription = self.create_subscription(
+            Image,
+            'camera_image',
+            self.image_callback,
+            10)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
 
     def image_callback(self, msg):
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -115,29 +65,29 @@ class WebcamAndAprilTagNode(Node):
             retval, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, dist_coeffs)
 
             if retval:
-                pose_msg = PoseStamped()
-                pose_msg.header.stamp = self.get_clock().now().to_msg()
-                pose_msg.header.frame_id = 'camera_frame'
-                pose_msg.pose.position.x = tvec[0][0]
-                pose_msg.pose.position.y = tvec[1][0]
-                pose_msg.pose.position.z = tvec[2][0]
+                # Publish TF transform
+                apriltag_to_camera_tf = TransformStamped()
+                apriltag_to_camera_tf.header.stamp = self.get_clock().now().to_msg()
+                apriltag_to_camera_tf.header.frame_id = 'camera_frame'
+                apriltag_to_camera_tf.child_frame_id = 'apriltag'
+                apriltag_to_camera_tf.transform.translation.x = tvec[0][0]
+                apriltag_to_camera_tf.transform.translation.y = tvec[1][0]
+                apriltag_to_camera_tf.transform.translation.z = tvec[2][0]
+                apriltag_to_camera_tf.transform.rotation.x = rvec[0][0]
+                apriltag_to_camera_tf.transform.rotation.y = rvec[1][0]
+                apriltag_to_camera_tf.transform.rotation.z = rvec[2][0]
+                apriltag_to_camera_tf.transform.rotation.w = 1.0
 
-                # Use the first three components of rvec for orientation
-                pose_msg.pose.orientation.x = rvec[0][0]
-                pose_msg.pose.orientation.y = rvec[1][0]
-                pose_msg.pose.orientation.z = rvec[2][0]
-                pose_msg.pose.orientation.w = 1.0  # Setting w component manually since solvePnP only returns a rotation vector
-
-                self.pose_publisher.publish(pose_msg)
+                self.tf_broadcaster.sendTransform(apriltag_to_camera_tf)
 
 def main(args=None):
     rclpy.init(args=args)
 
-    webcam_and_april_tag_node = WebcamAndAprilTagNode()
+    april_tag_detector = AprilTagDetector()
 
-    rclpy.spin(webcam_and_april_tag_node)
+    rclpy.spin(april_tag_detector)
 
-    webcam_and_april_tag_node.destroy_node()
+    april_tag_detector.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
