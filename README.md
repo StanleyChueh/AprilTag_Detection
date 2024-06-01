@@ -1,4 +1,7 @@
 # AprilTag_Detection
+```
+pip install apriltag
+``` 
 ``` 
 cd ~
 mkdir apriltag_ws
