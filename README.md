@@ -11,7 +11,3 @@ colcon build
 source install/setup.bash
 ros2 launch apriltag_detection detection.launch.py 
 ```
-```
-rviz2
-```
-DEMO:https://youtu.be/rmcSnZIrsuU
