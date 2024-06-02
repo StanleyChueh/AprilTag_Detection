@@ -44,7 +44,7 @@ class WebcamAndAprilTagNode(Node):
         # Start publishing images
         self.timer = self.create_timer(0.1, self.publish_image)
 
-    def publish_image(self):
+    def publish_image(self):#
         ret, frame = self.cap.read()
 
         if ret:
