@@ -1,12 +1,13 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped
 from cv_bridge import CvBridge
 from apriltag import apriltag
 import cv2
 import numpy as np
 import tf2_ros
+import tf2_geometry_msgs
 
 class AprilTagDetector(Node):
     def __init__(self):
@@ -45,7 +46,6 @@ class AprilTagDetector(Node):
         detections = self.detector.detect(gray)
 
         for detection in detections:
-            tag_id = detection['id']
             corners = detection['lb-rb-rt-lt']
             object_points = np.array([
                 [-self.tagsize / 2, -self.tagsize / 2, 0],
@@ -68,8 +68,8 @@ class AprilTagDetector(Node):
                 # Publish TF transform
                 apriltag_to_camera_tf = TransformStamped()
                 apriltag_to_camera_tf.header.stamp = self.get_clock().now().to_msg()
-                apriltag_to_camera_tf.header.frame_id = 'camera_frame'  # Setting 'map' as the parent frame
-                apriltag_to_camera_tf.child_frame_id = f'apriltag_{tag_id}'  # Child frame named based on the tag ID
+                apriltag_to_camera_tf.header.frame_id = 'camera_frame'
+                apriltag_to_camera_tf.child_frame_id = 'apriltag'
                 apriltag_to_camera_tf.transform.translation.x = tvec[0][0]
                 apriltag_to_camera_tf.transform.translation.y = tvec[1][0]
                 apriltag_to_camera_tf.transform.translation.z = tvec[2][0]
