@@ -7,13 +7,13 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='apriltag_detection',
-            executable='apriltag_detection_V1',
-            name='apriltag_detection_V1'
+            executable='apriltag_detection',
+            name='apriltag_detection'
         ),
         Node(
             package='apriltag_detection',
-            executable='tf_publisher_V1',
-            name='tf_publisher_V1'
+            executable='tf_publisher',
+            name='tf_publisher'
         ),
         ExecuteProcess(
             cmd=['rviz2', '-d', 'install/apriltag_detection/share/apriltag_detection/rviz/apriltag_rviz.rviz'],
