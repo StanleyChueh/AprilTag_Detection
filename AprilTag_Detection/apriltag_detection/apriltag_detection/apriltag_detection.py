@@ -27,8 +27,8 @@ class WebcamAndAprilTagNode(Node):
         self.tagsize = 0.173  # Tag size in meters
         self.f_mm = 3.67  # Focal length in mm
         self.sensor_width_mm = 3.68  # Assuming sensor width is around 3.68 mm
-        self.image_width_px = 640  # Resized image width
-        self.image_height_px = 480  # Resized image height
+        self.image_width_px = 160  # Resized image width
+        self.image_height_px = 120  # Resized image height
         self.fx = (self.f_mm / self.sensor_width_mm) * self.image_width_px
         self.fy = self.fx
         self.cx = self.image_width_px // 2
@@ -48,11 +48,12 @@ class WebcamAndAprilTagNode(Node):
         ret, frame = self.cap.read()
 
         if ret:
-            # Resize the frame to 640x480 pixels
-            frame_resized = cv2.resize(frame, (640, 480))
+            # Resize the frame to 160x120 pixels
+            frame_resized = cv2.resize(frame, (160, 120))
 
-            # Convert the frame to grayscale
-            gray = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2GRAY)
+            # Display the resized frame
+            cv_image = frame_resized.copy()
+            gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
             # Detect AprilTags in the frame
             detections = self.detector.detect(gray)
@@ -62,15 +63,15 @@ class WebcamAndAprilTagNode(Node):
                 for i in range(4):
                     start_point = tuple(map(int, corners[i]))
                     end_point = tuple(map(int, corners[(i + 1) % 4]))
-                    cv2.line(frame_resized, start_point, end_point, (0, 255, 0), 2)
+                    cv2.line(cv_image, start_point, end_point, (0, 255, 0), 2)
                 
                 # Draw the ID of the AprilTag
                 tag_id = str(detection['id'])
                 center_x = int((corners[0][0] + corners[2][0]) / 2)
                 center_y = int((corners[0][1] + corners[2][1]) / 2)
-                cv2.putText(frame_resized, tag_id, (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                cv2.putText(cv_image, tag_id, (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
-            cv2.imshow('Webcam', frame_resized)
+            cv2.imshow('Webcam', cv_image)
             cv2.waitKey(1)
 
             # Convert the resized frame to a ROS image message
@@ -116,7 +117,7 @@ class WebcamAndAprilTagNode(Node):
             if retval:
                 pose_msg = PoseStamped()
                 pose_msg.header.stamp = self.get_clock().now().to_msg()
-                pose_msg.header.frame_id = f'tag_ID_{detection["id"]}'  # Including ID in the frame_id
+                pose_msg.header.frame_id = 'camera_frame'
                 pose_msg.pose.position.x = tvec[0][0]
                 pose_msg.pose.position.y = tvec[1][0]
                 pose_msg.pose.position.z = tvec[2][0]
