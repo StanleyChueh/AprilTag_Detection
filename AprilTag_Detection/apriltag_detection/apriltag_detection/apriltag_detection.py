@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge 
 from apriltag import apriltag
 
 class WebcamAndAprilTagNode(Node):
@@ -21,7 +21,7 @@ class WebcamAndAprilTagNode(Node):
             exit()
 
         # Initialize AprilTag detector
-        self.detector = apriltag("tag36h11")
+        self.detector = apriltag("tag36h11") #tag family
         
         # Camera parameters
         self.tagsize = 0.173  # Tag size in meters
