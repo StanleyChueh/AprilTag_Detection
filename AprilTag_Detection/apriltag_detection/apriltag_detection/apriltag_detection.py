@@ -23,7 +23,7 @@ class WebcamAndAprilTagNode(Node):
         # Initialize AprilTag detector
         self.detector = apriltag("tag36h11") #tag family
         
-        # Camera parameters
+        # Camera parameters(modify focal length based on your cam)
         self.tagsize = 0.173  # Tag size in meters
         self.f_mm = 3.67  # Focal length in mm
         self.sensor_width_mm = 3.68  # Assuming sensor width is around 3.68 mm
