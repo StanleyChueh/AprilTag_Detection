@@ -1,5 +1,5 @@
 # AprilTag_Detection
-💡 In this repository, I provide a way to visualize the coordinates of AprilTags in RVIZ. It'll be useful for localizing the robot in the map frame. 💡
+💡 In this repository, I provide a way to visualize the coordinates of AprilTags in RVIZ. It'll be useful for localizing the robot in the map frame. 
 
 ## Install AprilTag Library
 ```
